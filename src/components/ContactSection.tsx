@@ -9,8 +9,8 @@ import {
   Globe, 
   Loader2, 
   AlertCircle, 
-  CheckCircle2,
-  Inbox
+  CheckCircle2, 
+  Inbox 
 } from 'lucide-react';
 import { personalInfo } from '../data/portfolioData';
 
@@ -61,68 +61,73 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onCopyText }) =>
         })
       });
 
-      const data = await response.json().catch(() => null);
+      const data = await response.json().catch(() => ({}));
 
-      if (data && (data.success === 'true' || data.success === true)) {
+      if (response.ok && data.success !== "false") {
         setSubmitStatus('success');
-        setStatusMessage('ส่งข้อความถึงคุณฟลุ๊คเรียบร้อยแล้ว! ขอบคุณที่ติดต่อเข้ามาครับ ฟลุ๊คจะตอบกลับทางอีเมลของคุณโดยเร็วที่สุด');
+        setStatusMessage('ส่งข้อความสำเร็จ! ข้อความของคุณถูกส่งตรงไปยังกล่องจดหมายของฟลุ๊คเรียบร้อยแล้ว ผมจะรีบติดต่อกลับโดยเร็วที่สุดครับ ขอบคุณครับ');
         setSenderName('');
         setSenderEmail('');
         setSubject('');
         setMessage('');
-      } else if (data && data.message && data.message.toLowerCase().includes('activat')) {
-        // FormSubmit 1-time email activation required
-        setSubmitStatus('activation');
-        setStatusMessage(`ระบบ FormSubmit ได้ส่งอีเมลยืนยันไปยัง ${personalInfo.email} เรียบร้อยแล้ว! กรุณาเปิดกล่องจดหมายของคุณ (หรือโฟลเดอร์ Junk/Spam) แล้วกดปุ่ม "Activate Form" เพียงครั้งเดียวเพื่อเปิดรับข้อความอัตโนมัติครับ`);
-      } else if (data && data.message) {
-        setSubmitStatus('error');
-        setStatusMessage(data.message);
       } else {
-        throw new Error('ไม่สามารถเชื่อมต่อกับระบบ FormSubmit ได้ในขณะนี้');
+        if (data.message && data.message.toLowerCase().includes('activat')) {
+          setSubmitStatus('activation');
+          setStatusMessage('ระบบ FormSubmit ต้องการให้เจ้าของอีเมล (' + personalInfo.email + ') กดปุ่ม Activate ในอีเมลที่ส่งไปครั้งแรกเพื่อเปิดรับข้อความอัตโนมัติ');
+        } else {
+          setSubmitStatus('error');
+          setStatusMessage(data.message || 'ไม่สามารถส่งข้อความได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง หรือส่งตรงผ่าน Gmail / แอป Mail ด้านล่างครับ');
+        }
       }
-    } catch (err: any) {
+    } catch {
       setSubmitStatus('error');
-      setStatusMessage(err?.message || 'ไม่สามารถส่งผ่านระบบอัตโนมัติได้ในขณะนี้ คุณสามารถส่งตรงผ่านแอปพลิเคชัน Mail หรือเปิด Gmail ได้จากปุ่มด้านล่างครับ');
+      setStatusMessage('เกิดข้อผิดพลาดในการเชื่อมต่อเครือข่าย กรุณาตรวจสอบอินเทอร์เน็ต หรือส่งตรงผ่านปุ่ม Gmail / แอป Mail ด้านล่างครับ');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleSendMailto = () => {
-    const finalSubject = subject.trim() || `ติดต่อจากเว็บไซต์ Portfolio (${senderName || 'ผู้สนใจ'})`;
-    const finalBody = `สวัสดีครับคุณฟลุ๊ค (ภาณุวิทย์),%0D%0A%0D%0A${encodeURIComponent(message)}%0D%0A%0D%0Aจาก: ${encodeURIComponent(senderName)}%0D%0Aอีเมลติดต่อกลับ: ${encodeURIComponent(senderEmail)}`;
-    window.location.href = `mailto:${personalInfo.email}?subject=${encodeURIComponent(finalSubject)}&body=${finalBody}`;
+  const handleOpenGmailWeb = () => {
+    const mailSubject = encodeURIComponent(subject.trim() || `ติดต่อจาก Portfolio: ${senderName || 'ผู้เยี่ยมชมเว็บ'}`);
+    const mailBody = encodeURIComponent(
+      `เรียน คุณฟลุ๊ค (ภาณุวิทย์),\n\n${message || '[พิมพ์ข้อความของคุณที่นี่]'}\n\nจาก: ${senderName || '[ชื่อของคุณ]'}\nอีเมลติดต่อกลับ: ${senderEmail || '[อีเมลของคุณ]'}`
+    );
+    window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${personalInfo.email}&su=${mailSubject}&body=${mailBody}`, '_blank');
   };
 
-  const handleOpenGmailWeb = () => {
-    const finalSubject = subject.trim() || `ติดต่อจากเว็บไซต์ Portfolio (${senderName || 'ผู้สนใจ'})`;
-    const finalBody = `สวัสดีครับคุณฟลุ๊ค (ภาณุวิทย์),\n\n${message}\n\nจาก: ${senderName}\nอีเมลติดต่อกลับ: ${senderEmail}`;
-    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(personalInfo.email)}&su=${encodeURIComponent(finalSubject)}&body=${encodeURIComponent(finalBody)}`;
-    window.open(gmailUrl, '_blank');
+  const handleSendMailto = () => {
+    const mailSubject = encodeURIComponent(subject.trim() || `ติดต่อจาก Portfolio: ${senderName || 'ผู้เยี่ยมชมเว็บ'}`);
+    const mailBody = encodeURIComponent(
+      `เรียน คุณฟลุ๊ค (ภาณุวิทย์),\n\n${message || '[พิมพ์ข้อความของคุณที่นี่]'}\n\nจาก: ${senderName || '[ชื่อของคุณ]'}\nอีเมลติดต่อกลับ: ${senderEmail || '[อีเมลของคุณ]'}`
+    );
+    window.location.href = `mailto:${personalInfo.email}?subject=${mailSubject}&body=${mailBody}`;
   };
 
   const handleCopyDraft = () => {
-    const draft = `ส่งถึง: ${personalInfo.email}\nหัวข้อ: ${subject || 'ติดต่อจากเว็บไซต์ Portfolio'}\n\nข้อความ:\n${message}\n\nจาก: ${senderName}\nอีเมล: ${senderEmail}`;
-    onCopyText(draft, 'ข้อความสำหรับส่งอีเมล');
+    const draftText = `หัวข้อ: ${subject.trim() || 'ติดต่อจาก Portfolio'}\nผู้ส่ง: ${senderName || 'ไม่ระบุ'}\nอีเมลติดต่อกลับ: ${senderEmail || 'ไม่ระบุ'}\n\nข้อความ:\n${message || 'ไม่มีข้อความ'}`;
+    onCopyText(draftText, 'ร่างข้อความ');
   };
 
   return (
-    <section id="contact" className="py-24 bg-appleDark-bg relative border-t border-white/5">
+    <section id="contact" className="py-24 bg-appleDark-bg relative border-t border-slate-200/80 dark:border-white/5 transition-colors duration-300">
       {/* Ambient background light */}
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div 
+        className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-3xl pointer-events-none" 
+        style={{ backgroundColor: 'var(--spotlight-accent)' }}
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-panel border border-white/10 text-sky-400 text-xs font-semibold uppercase tracking-wider mb-3">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-panel border border-slate-200/80 dark:border-white/10 text-sky-600 dark:text-sky-400 text-xs font-semibold uppercase tracking-wider mb-3">
             <Mail className="w-3.5 h-3.5" />
             <span>Connect & Collaborate</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-navy-950 dark:text-white tracking-tight">
             ติดต่อและส่งอีเมลหาผม
           </h2>
-          <p className="mt-3 text-slate-400 text-base sm:text-lg">
+          <p className="mt-3 text-slate-600 dark:text-slate-400 text-base sm:text-lg">
             ยินดีรับโอกาสการฝึกงาน การทำโครงงานร่วมกัน หรือการพูดคุยแลกเปลี่ยนทางวิชาการ
           </p>
         </div>
@@ -134,26 +139,29 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onCopyText }) =>
           <div className="lg:col-span-5 space-y-6">
             
             {/* Primary Email Banner Card */}
-            <div className="glass-panel rounded-[2rem] p-7 sm:p-8 border border-white/15 shadow-apple-glass relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-sky-400/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="glass-panel rounded-[2rem] p-7 sm:p-8 border border-slate-200/80 dark:border-white/15 shadow-apple-glass relative overflow-hidden">
+              <div 
+                className="absolute top-0 right-0 w-40 h-40 rounded-full blur-2xl pointer-events-none" 
+                style={{ backgroundColor: 'var(--spotlight-accent)' }}
+              />
               
-              <span className="btn-nowrap inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-sky-500/20 text-sky-300 border border-sky-400/30 mb-4">
-                <Sparkles className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+              <span className="btn-nowrap inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-sky-500/10 dark:bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-400/30 mb-4">
+                <Sparkles className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
                 <span>Serverless Form Backend</span>
               </span>
               
-              <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">
+              <h3 className="text-xl sm:text-2xl font-bold text-navy-950 dark:text-white mb-2">
                 อีเมลหลักสำหรับติดต่องาน
               </h3>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-6">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-6">
                 ระบบส่งข้อความผ่าน FormSubmit API ส่งตรงถึงกล่องจดหมายของผมทันทีโดยไม่ต้องเปิดแอปแยก
               </p>
 
-              <div className="bg-white/5 rounded-2xl p-4 border border-white/10 mb-6 backdrop-blur-md">
-                <p className="text-xs text-sky-400 font-medium mb-1">
+              <div className="bg-slate-100 dark:bg-white/5 rounded-2xl p-4 border border-slate-200 dark:border-white/10 mb-6 backdrop-blur-md">
+                <p className="text-xs text-sky-600 dark:text-sky-400 font-semibold mb-1">
                   Recipient Email Address
                 </p>
-                <p className="text-base sm:text-lg font-bold text-white break-all">
+                <p className="text-base sm:text-lg font-bold text-navy-950 dark:text-white break-all">
                   {personalInfo.email}
                 </p>
               </div>
@@ -163,9 +171,9 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onCopyText }) =>
                 <button
                   type="button"
                   onClick={() => onCopyText(personalInfo.email, 'อีเมล')}
-                  className="btn-nowrap py-3 px-4 rounded-xl text-xs font-semibold text-white bg-white/10 hover:bg-white/20 border border-white/15 transition-all gap-1.5"
+                  className="btn-nowrap py-3 px-4 rounded-xl text-xs font-semibold text-slate-700 dark:text-white bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 border border-slate-200 dark:border-white/15 transition-all gap-1.5"
                 >
-                  <Copy className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                  <Copy className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
                   <span>คัดลอกอีเมล</span>
                 </button>
 
@@ -182,26 +190,26 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onCopyText }) =>
 
             {/* Quick Channel Pills */}
             <div className="glass-panel rounded-[2rem] p-6 space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
                 ช่องทางติดต่อเพิ่มเติม
               </h4>
 
               {/* Phone */}
-              <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between gap-3">
+              <div className="p-3.5 rounded-2xl bg-slate-100/80 dark:bg-white/5 border border-slate-200/70 dark:border-white/5 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-400/20">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-400/20">
                     <Phone className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-[11px] text-slate-400">โทรศัพท์</p>
-                    <a href={`tel:${personalInfo.phone}`} className="text-sm font-bold text-white hover:text-sky-300">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">โทรศัพท์</p>
+                    <a href={`tel:${personalInfo.phone}`} className="text-sm font-bold text-navy-950 dark:text-white hover:text-sky-600 dark:hover:text-sky-300">
                       {personalInfo.phone}
                     </a>
                   </div>
                 </div>
                 <button
                   onClick={() => onCopyText(personalInfo.phone, 'เบอร์โทร')}
-                  className="btn-nowrap p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  className="btn-nowrap p-2 text-slate-400 hover:text-navy-950 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg transition-colors"
                   title="คัดลอกเบอร์โทร"
                 >
                   <Copy className="w-4 h-4" />
@@ -209,21 +217,21 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onCopyText }) =>
               </div>
 
               {/* LINE */}
-              <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between gap-3">
+              <div className="p-3.5 rounded-2xl bg-slate-100/80 dark:bg-white/5 border border-slate-200/70 dark:border-white/5 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0 font-bold text-xs border border-emerald-400/20">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 font-bold text-xs border border-emerald-400/20">
                     LINE
                   </div>
                   <div>
-                    <p className="text-[11px] text-slate-400">LINE ID</p>
-                    <p className="text-sm font-bold text-white">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">LINE ID</p>
+                    <p className="text-sm font-bold text-navy-950 dark:text-white">
                       {personalInfo.lineId}
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => onCopyText(personalInfo.lineId, 'LINE ID')}
-                  className="btn-nowrap p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  className="btn-nowrap p-2 text-slate-400 hover:text-navy-950 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg transition-colors"
                   title="คัดลอก LINE ID"
                 >
                   <Copy className="w-4 h-4" />
@@ -235,20 +243,20 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onCopyText }) =>
                 href={`https://instagram.com/${personalInfo.instagram}`}
                 target="_blank"
                 rel="noreferrer"
-                className="p-3.5 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between gap-3 hover:border-rose-400/30 transition-all group"
+                className="p-3.5 rounded-2xl bg-slate-100/80 dark:bg-white/5 border border-slate-200/70 dark:border-white/5 flex items-center justify-between gap-3 hover:border-rose-400/30 transition-all group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center shrink-0 border border-rose-400/20">
+                  <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-400/20">
                     <ExternalLink className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-[11px] text-slate-400">Instagram</p>
-                    <p className="text-sm font-bold text-white group-hover:text-rose-300 transition-colors">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Instagram</p>
+                    <p className="text-sm font-bold text-navy-950 dark:text-white group-hover:text-rose-600 dark:group-hover:text-rose-300 transition-colors">
                       @{personalInfo.instagram}
                     </p>
                   </div>
                 </div>
-                <span className="btn-nowrap text-xs text-slate-400 group-hover:text-rose-300 transition-colors">
+                <span className="btn-nowrap text-xs text-slate-400 group-hover:text-rose-600 dark:group-hover:text-rose-300 transition-colors">
                   เปิดดู →
                 </span>
               </a>
@@ -258,37 +266,37 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onCopyText }) =>
 
           {/* Right Column: Serverless FormSubmit with JavaScript Fetch (7 cols) */}
           <div className="lg:col-span-7">
-            <div className="glass-panel rounded-[2rem] p-7 sm:p-9 border border-white/15 shadow-apple-glass">
+            <div className="glass-panel rounded-[2rem] p-7 sm:p-9 border border-slate-200/80 dark:border-white/15 shadow-apple-glass">
               <div className="flex items-center justify-between gap-4 mb-6">
                 <div>
-                  <h3 className="text-xl font-bold text-white">
+                  <h3 className="text-xl font-bold text-navy-950 dark:text-white">
                     ส่งข้อความตรงถึงฟลุ๊ค
                   </h3>
-                  <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
-                    ส่งผ่าน <span className="text-sky-300 font-mono">FormSubmit API (Serverless Backend)</span> ตรงถึง {personalInfo.email}
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-0.5">
+                    ส่งผ่าน <span className="text-sky-600 dark:text-sky-300 font-mono">FormSubmit API (Serverless Backend)</span> ตรงถึง {personalInfo.email}
                   </p>
                 </div>
-                <div className="w-10 h-10 rounded-2xl bg-sky-500/10 text-sky-400 flex items-center justify-center shrink-0 border border-sky-400/20">
+                <div className="w-10 h-10 rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0 border border-sky-400/20">
                   <Send className="w-5 h-5" />
                 </div>
               </div>
 
               {/* Success Notification */}
               {submitStatus === 'success' && (
-                <div className="mb-6 p-4 rounded-2xl bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-sm flex items-start gap-3 animate-fadeIn">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                <div className="mb-6 p-4 rounded-2xl bg-emerald-500/15 border border-emerald-400/30 text-emerald-700 dark:text-emerald-300 text-sm flex items-start gap-3 animate-fadeIn">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                   <p className="leading-relaxed">{statusMessage}</p>
                 </div>
               )}
 
               {/* FormSubmit Activation Required Notification */}
               {submitStatus === 'activation' && (
-                <div className="mb-6 p-5 rounded-2xl bg-amber-500/15 border border-amber-400/40 text-amber-200 text-sm space-y-2 animate-fadeIn">
+                <div className="mb-6 p-5 rounded-2xl bg-amber-500/15 border border-amber-400/40 text-amber-900 dark:text-amber-200 text-sm space-y-2 animate-fadeIn">
                   <div className="flex items-start gap-3">
-                    <Inbox className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                    <Inbox className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-bold text-white text-base">จำเป็นต้องยืนยันการเปิดใช้งาน FormSubmit (ทำครั้งแรกครั้งเดียว)</p>
-                      <p className="text-xs sm:text-sm text-amber-200/90 leading-relaxed mt-1">
+                      <p className="font-bold text-navy-950 dark:text-white text-base">จำเป็นต้องยืนยันการเปิดใช้งาน FormSubmit (ทำครั้งแรกครั้งเดียว)</p>
+                      <p className="text-xs sm:text-sm text-amber-800 dark:text-amber-200/90 leading-relaxed mt-1">
                         {statusMessage}
                       </p>
                     </div>
@@ -309,11 +317,11 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onCopyText }) =>
 
               {/* Error Notification */}
               {submitStatus === 'error' && (
-                <div className="mb-6 p-4 rounded-2xl bg-rose-500/15 border border-rose-400/30 text-rose-300 text-sm flex items-start gap-3 animate-fadeIn">
-                  <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                <div className="mb-6 p-4 rounded-2xl bg-rose-500/15 border border-rose-400/30 text-rose-700 dark:text-rose-300 text-sm flex items-start gap-3 animate-fadeIn">
+                  <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
                   <div>
                     <p className="leading-relaxed">{statusMessage}</p>
-                    <p className="text-xs text-rose-400/80 mt-1">
+                    <p className="text-xs text-rose-600 dark:text-rose-400/80 mt-1">
                       (สามารถกดปุ่ม &quot;เปิดส่งทาง Gmail บนเว็บ&quot; ด้านล่างเพื่อส่งหาฟลุ๊คได้ทันทีครับ)
                     </p>
                   </div>
@@ -323,8 +331,8 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onCopyText }) =>
               <form onSubmit={handleFormSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                      ชื่อของคุณ / บริษัท / สถาบัน <span className="text-rose-400">*</span>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                      ชื่อของคุณ / บริษัท / สถาบัน <span className="text-rose-500 dark:text-rose-400">*</span>
                     </label>
                     <input
                       type="text"
@@ -332,13 +340,13 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onCopyText }) =>
                       value={senderName}
                       onChange={(e) => setSenderName(e.target.value)}
                       placeholder="เช่น สมชาย ใจดี / บริษัท ABC"
-                      className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition-all"
+                      className="w-full px-4 py-3 rounded-xl bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 text-sm text-navy-950 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition-all shadow-xs dark:shadow-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                      อีเมลติดต่อกลับของคุณ <span className="text-rose-400">*</span>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                      อีเมลติดต่อกลับของคุณ <span className="text-rose-500 dark:text-rose-400">*</span>
                     </label>
                     <input
                       type="email"
@@ -346,13 +354,13 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onCopyText }) =>
                       value={senderEmail}
                       onChange={(e) => setSenderEmail(e.target.value)}
                       placeholder="name@example.com"
-                      className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition-all"
+                      className="w-full px-4 py-3 rounded-xl bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 text-sm text-navy-950 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition-all shadow-xs dark:shadow-none"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                     หัวข้อเรื่อง (Subject)
                   </label>
                   <input
@@ -360,13 +368,13 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onCopyText }) =>
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                     placeholder="เช่น สนใจสัมภาษณ์ฝึกงาน / ติดต่อสอบถามเกี่ยวกับโปรเจกต์"
-                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition-all"
+                    className="w-full px-4 py-3 rounded-xl bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 text-sm text-navy-950 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition-all shadow-xs dark:shadow-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    ข้อความ (Message) <span className="text-rose-400">*</span>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                    ข้อความ (Message) <span className="text-rose-500 dark:text-rose-400">*</span>
                   </label>
                   <textarea
                     required
@@ -374,7 +382,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onCopyText }) =>
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="พิมพ์รายละเอียดที่ต้องการติดต่อ เช่น ตำแหน่งฝึกงาน, ข้อมูลที่อยากสอบถามเพิ่มเติม หรือข้อความถึงฟลุ๊ค..."
-                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition-all resize-y"
+                    className="w-full px-4 py-3 rounded-xl bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 text-sm text-navy-950 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition-all resize-y shadow-xs dark:shadow-none"
                   />
                 </div>
 
@@ -402,7 +410,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onCopyText }) =>
                     <button
                       type="button"
                       onClick={handleOpenGmailWeb}
-                      className="btn-nowrap w-full py-2.5 px-3 rounded-xl text-xs font-semibold text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-400/20 transition-all gap-1.5"
+                      className="btn-nowrap w-full py-2.5 px-3 rounded-xl text-xs font-semibold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-500/10 hover:bg-sky-100 dark:hover:bg-sky-500/20 border border-sky-300 dark:border-sky-400/20 transition-all gap-1.5"
                       title="เปิดหน้าต่างเขียนจดหมายบน Gmail เว็บบราวเซอร์"
                     >
                       <Globe className="w-3.5 h-3.5 shrink-0" />
@@ -412,7 +420,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onCopyText }) =>
                     <button
                       type="button"
                       onClick={handleCopyDraft}
-                      className="btn-nowrap w-full py-2.5 px-3 rounded-xl text-xs font-semibold text-slate-300 bg-white/5 hover:bg-white/10 border border-white/10 transition-all gap-1.5"
+                      className="btn-nowrap w-full py-2.5 px-3 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 transition-all gap-1.5"
                       title="คัดลอกร่างข้อความและอีเมลไปวางในโปรแกรมอื่น"
                     >
                       <Copy className="w-3.5 h-3.5 shrink-0" />

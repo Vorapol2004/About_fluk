@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -8,7 +9,7 @@ export default {
     extend: {
       colors: {
         appleDark: {
-          bg: '#050814',
+          bg: 'var(--bg-canvas, #050814)',
           subtle: '#090E20',
           card: '#0D152D',
           cardHover: '#121D3D',
